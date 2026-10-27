@@ -46,8 +46,10 @@ const SURVEY = {
   "intro": [
     "Cette enquête vise à dresser un état des lieux des dispositifs de suivi des pêcheries à Madagascar : ressources suivies, méthodes et variables collectées, moyens humains et financiers, gestion des données et contraintes rencontrées.",
     "Elle s'adresse aux administrations, gestionnaires d'AMP/LMMA, ONG, associations, structures communautaires, instituts de recherche et partenaires impliqués dans le suivi des pêcheries.",
-    "Si votre organisation suit plusieurs ressources (poissons, poulpes, crabes…), quelques questions vous seront posées pour chacune d'elles. Vos réponses sont enregistrées automatiquement sur cet appareil : vous pouvez interrompre la saisie et la reprendre plus tard depuis le même navigateur."
+    "Si votre organisation suit plusieurs ressources (poissons, poulpes, crabes…), quelques questions vous seront posées pour chacune d'elles."
   ],
+  "draftNote": "Vos réponses sont enregistrées automatiquement sur cet appareil : vous pouvez interrompre la saisie et la reprendre plus tard depuis le même navigateur.",
+  
   "privacy": "Les informations recueillies servent uniquement à cette étude. Vos coordonnées ne serviront qu'à vous recontacter si une réponse doit être précisée ; elles ne seront ni publiées ni transmises. Les résultats seront présentés de manière agrégée.",
   "consentLabel": "J'accepte que les informations fournies soient utilisées dans le cadre de cette étude, selon les conditions décrites ci-dessus.",
   "heroPhoto": "peche-pirogues",
