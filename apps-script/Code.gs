@@ -6,10 +6,11 @@
  *
  * Onglets créés automatiquement :
  *   - Reponses   : une ligne par organisation répondante (sections A–C, G–J)
- *   - Ressources : une ligne par ressource suivie (Q14–Q40), reliée par response_id
+ *   - Ressources : une ligne par ressource suivie (Q15–Q41), reliée par response_id
+ *                  (une seule ligne si le même protocole est utilisé pour toutes, Q14 = Oui)
  *   - Journal    : erreurs éventuelles
- * Pièces jointes (Q55) : enregistrées dans un dossier Google Drive (créé au besoin),
- * un sous-dossier par réponse ; les liens sont écrits dans la colonne q055_fichiers.
+ * Pièces jointes (Q58) : enregistrées dans un dossier Google Drive (créé au besoin),
+ * un sous-dossier par réponse ; les liens sont écrits dans la colonne q058_fichiers.
  * Les colonnes manquantes sont ajoutées à la volée : modifier le questionnaire
  * ne nécessite pas de modifier ce script.
  */
@@ -23,6 +24,9 @@ const DRIVE_FOLDER_ID = "";
 const DRIVE_FOLDER_NAME = "Enquête pêcheries — pièces jointes";
 // Facultatif : adresse e-mail qui reçoit une notification à chaque réponse
 const NOTIFY_EMAIL = "";
+
+// Identifiant de la question « pièces jointes » dans survey-config.js (colonne <id>_fichiers)
+const FILE_QID = "q058";
 
 const ALLOWED_EXT = ["pdf", "doc", "docx", "xls", "xlsx", "csv", "jpg", "jpeg", "png"];
 
@@ -55,9 +59,9 @@ function doPost(e) {
     const files = Array.isArray(data.fichiers) ? data.fichiers : [];
     if (files.length) {
       const links = saveFiles_(data.response_id, general.q005 || "", files);
-      general.q055_fichiers = links.join(" | ");
+      general[FILE_QID + "_fichiers"] = links.join(" | ");
     } else {
-      general.q055_fichiers = "";
+      general[FILE_QID + "_fichiers"] = "";
     }
 
     appendObject_(ss, SHEET_RESPONSES, Object.assign({}, meta, general));

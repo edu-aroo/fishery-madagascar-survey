@@ -20,6 +20,7 @@ for (const st of S.STEPS) {
     const groups = x.groups ? x.groups.map(g => g.options.map(() => g.label || "Autre")).flat().join(" | ") : "";
     rows.push({ ...base, variable: x.id, label: x.label, type: x.type, options: opts.join(" | "), groups });
     if (x.other) rows.push({ ...base, variable: x.id + "_autre", label: x.label + " — précision (Autre / préciser)", type: "text", options: "", required: "Non" });
+    if (x.units) rows.push({ ...base, variable: x.id + "_unite", label: x.label + " — unité", type: "radio", options: x.units.join(" | "), required: "Non" });
   }
 }
 const cols = ["sheet", "variable", "n", "section", "step", "label", "type", "options", "groups", "required", "condition"];

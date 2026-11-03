@@ -3,7 +3,8 @@
    ---------------------------------------------------------------------
    • META   : titre, textes d'accueil, contact, logos, photos, URL Apps Script
    • PHOTOS : photos du bandeau, de l'accueil et des sections (avec crédits)
-   • LOOP   : boucle « par ressource » (Q14–Q40 répétées pour chaque ressource cochée en Q13)
+   • LOOP   : boucle « par ressource » (Q15–Q41 répétées pour chaque ressource cochée en Q13 ;
+              un seul passage si Q14 = « Oui », même protocole pour toutes les ressources)
    • STEPS  : étapes du formulaire et questions. Les étapes marquées
               perMethod: true sont répétées pour chaque ressource.
    Les identifiants (id) deviennent les noms de colonnes dans Google
@@ -15,14 +16,17 @@
      other: true   → champ texte quand « Autre » ou « (préciser) » est coché (id_autre)
      groups: [...] → options présentées par groupes (choix multiple)
      unit: 'MGA'   → unité affichée à côté d'un nombre
-     showIf        → { q:'q011', eq:'Oui' } | { q:'q017', starts:'Oui' } |
-                     { q:'q012', in:[...] } | { q:'q015', ne:'Avant 2020' } |
-                     { all:[cond1, cond2] }
+     units: [...]  → nombre + liste d'unités (colonne supplémentaire id_unite)
+     showIf        → { q:'q011', eq:'Oui' } | { q:'q018', starts:'Oui' } |
+                     { q:'q012', in:[...] } | { q:'q016', ne:'Avant 2020' } |
+                     { q:'q013', minCount:2 } | { all:[cond1, cond2] }
+   Version 2.0 (02/11/2026) : questionnaire du 23/10/2026 — identifiants
+   renumérotés (id = numéro affiché) ; la feuille Google doit être vidée.
    ===================================================================== */
 
 const SURVEY = {
   META: {
-  "version": "1.0",
+  "version": "2.0",
   "title": "Enquête nationale sur le suivi des pêcheries à Madagascar",
   "subtitle": "Inventaire des dispositifs de suivi des pêcheries, de leurs moyens et de leurs contraintes, en vue d'un protocole national harmonisé",
   "organizer": "Fondation pour les Aires Protégées et la Biodiversité de Madagascar (FAPBM), en collaboration avec l’Institut Halieutique et des Sciences Marines (IH.SM) – Université de Toliara",
@@ -46,7 +50,7 @@ const SURVEY = {
   "intro": [
     "Cette enquête vise à dresser un état des lieux des dispositifs de suivi des pêcheries à Madagascar : ressources suivies, méthodes et variables collectées, moyens humains et financiers, gestion des données et contraintes rencontrées.",
     "Elle s'adresse aux administrations, gestionnaires d'AMP/LMMA, ONG, associations, structures communautaires, instituts de recherche et partenaires impliqués dans le suivi des pêcheries.",
-    "Si votre organisation suit plusieurs ressources (poissons, poulpes, crabes…), quelques questions vous seront posées pour chacune d'elles."
+    "Si votre organisation suit plusieurs ressources (poissons, poulpes, crabes…), quelques questions vous seront posées pour chacune d'elles, ou une seule fois si vous utilisez le même protocole pour toutes."
   ],
   "draftNote": "Vos réponses sont enregistrées automatiquement sur cet appareil : vous pouvez interrompre la saisie et la reprendre plus tard depuis le même navigateur.",
   
@@ -182,7 +186,12 @@ const SURVEY = {
         ]
       }
     ]
-  }
+  },
+  "common": {
+    "q": "q014",
+    "eq": "Oui"
+  },
+  "commonLabel": "Protocole commun"
 },
 
   STEPS: [
@@ -257,17 +266,17 @@ const SURVEY = {
       {
         "id": "q007",
         "n": 7,
-        "label": "Nom du site d'intervention",
+        "label": "Nom(s) du (des) site(s) d'intervention",
         "type": "text",
         "required": true,
-        "help": "Ex. : nom de l'AMP, du LMMA, de la baie, du paysage…"
+        "help": "Ex. : nom de l'AMP, du LMMA, de la baie, du paysage… Séparez les noms par une virgule si vous avez plusieurs sites d'intervention."
       },
       {
         "id": "q008",
         "n": 8,
         "label": "Catégorie du site",
         "type": "radio",
-        "required": false,
+        "required": true,
         "help": "Si plusieurs statuts s'appliquent, choisissez le principal.",
         "options": [
           "AMP — statut définitif (décret de création)",
@@ -284,8 +293,9 @@ const SURVEY = {
         "id": "q009",
         "n": 9,
         "label": "Région",
-        "type": "radio",
+        "type": "checkbox",
         "required": true,
+        "help": "Plusieurs choix possibles.",
         "options": [
           "Diana",
           "Sava",
@@ -309,8 +319,9 @@ const SURVEY = {
         "id": "q010",
         "n": 10,
         "label": "Rôle de votre organisation sur ce site",
-        "type": "radio",
+        "type": "checkbox",
         "required": false,
+        "help": "Plusieurs choix possibles.",
         "options": [
           "Gestionnaire principal ou délégataire de gestion",
           "Cogestionnaire",
@@ -366,9 +377,11 @@ const SURVEY = {
         "options": [
           "Poissons commerciaux",
           "Poulpes",
-          "Crabes",
+          "Crabes de mangrove",
           "Crevettes",
           "Langoustes",
+          "Holothuries",
+          "Oursins",
           "Autre"
         ],
         "other": true,
@@ -379,7 +392,23 @@ const SURVEY = {
             "En collaboration avec d'autres partenaires"
           ]
         },
-        "help": "Plusieurs choix possibles. Les sections suivantes seront répétées pour chaque ressource cochée."
+        "help": "Plusieurs choix possibles. Les sections suivantes seront répétées pour chaque ressource cochée, sauf si vous utilisez le même protocole pour toutes (question suivante)."
+      },
+      {
+        "id": "q014",
+        "n": 14,
+        "label": "Utilisez-vous le même protocole / la même fiche de collecte de données pour le suivi de ces ressources ?",
+        "type": "radio",
+        "required": true,
+        "options": [
+          "Oui",
+          "Non"
+        ],
+        "showIf": {
+          "q": "q013",
+          "minCount": 2
+        },
+        "help": "Si oui, les questions suivantes ne seront posées qu'une seule fois, pour l'ensemble des ressources."
       }
     ]
   },
@@ -393,16 +422,16 @@ const SURVEY = {
     "short": "Historique et méthode",
     "questions": [
       {
-        "id": "q014",
-        "n": 14,
+        "id": "q015",
+        "n": 15,
         "label": "Depuis quelle année votre organisation fait-elle le suivi de cette ressource ?",
         "type": "year",
         "required": false,
         "section": "C"
       },
       {
-        "id": "q015",
-        "n": 15,
+        "id": "q016",
+        "n": 16,
         "label": "En quelle année le suivi de cette ressource s'est-il terminé ?",
         "type": "radio",
         "required": true,
@@ -421,14 +450,14 @@ const SURVEY = {
         "help": "Si le suivi s'est terminé avant 2020, les questions détaillées sur cette ressource ne seront pas posées."
       },
       {
-        "id": "q016",
-        "n": 16,
+        "id": "q017",
+        "n": 17,
         "label": "Quel(s) type(s) de suivi utilisez-vous ou avez-vous utilisé(s) pour cette ressource ?",
         "type": "checkbox",
         "required": true,
         "section": "C",
         "showIf": {
-          "q": "q015",
+          "q": "q016",
           "ne": "Avant 2020"
         },
         "groups": [
@@ -461,14 +490,14 @@ const SURVEY = {
         ]
       },
       {
-        "id": "q017",
-        "n": 17,
+        "id": "q018",
+        "n": 18,
         "label": "La méthode utilisée est-elle basée sur un protocole standardisé publié ou reconnu ?",
         "type": "radio",
         "required": true,
         "section": "C",
         "showIf": {
-          "q": "q015",
+          "q": "q016",
           "ne": "Avant 2020"
         },
         "options": [
@@ -479,26 +508,26 @@ const SURVEY = {
         ]
       },
       {
-        "id": "q018",
-        "n": 18,
+        "id": "q019",
+        "n": 19,
         "label": "Si oui, précisez le protocole (nom, référence)",
         "type": "text",
         "required": false,
         "section": "C",
         "showIf": {
-          "q": "q017",
+          "q": "q018",
           "starts": "Oui"
         }
       },
       {
-        "id": "q019",
-        "n": 19,
+        "id": "q020",
+        "n": 20,
         "label": "Quelles parties du protocole ont été modifiées et pourquoi ?",
         "type": "textarea",
         "required": false,
         "section": "C",
         "showIf": {
-          "q": "q017",
+          "q": "q018",
           "eq": "Oui, mais adaptée"
         }
       }
@@ -512,15 +541,15 @@ const SURVEY = {
       "E"
     ],
     "showIf": {
-      "q": "q015",
+      "q": "q016",
       "ne": "Avant 2020"
     },
     "title": "Objectifs et indicateurs halieutiques",
     "short": "Objectifs et indicateurs",
     "questions": [
       {
-        "id": "q020",
-        "n": 20,
+        "id": "q021",
+        "n": 21,
         "label": "Quels sont les principaux objectifs du suivi réalisé ?",
         "type": "checkbox",
         "required": true,
@@ -539,8 +568,8 @@ const SURVEY = {
         "other": true
       },
       {
-        "id": "q021",
-        "n": 21,
+        "id": "q022",
+        "n": 22,
         "label": "Quelles variables sont mesurées avec cette méthode ?",
         "type": "checkbox",
         "required": true,
@@ -572,6 +601,7 @@ const SURVEY = {
               "Moyen d'embarcation",
               "Type d'embarcation",
               "Nombre de pirogues",
+              "Longueur de la pirogue",
               "Nombre de pêcheurs à bord",
               "Engin de pêche utilisé",
               "Nombre d'engins de pêche utilisés",
@@ -583,7 +613,7 @@ const SURVEY = {
             "options": [
               "Poids total (kg)",
               "Poids par groupe de taxon (ex. poissons, crevettes, calmars, poulpes…) (kg)",
-              "Nombre de spécimens par groupe de taxon"
+              "Nombre d'individus"
             ]
           },
           {
@@ -592,7 +622,7 @@ const SURVEY = {
               "Identification au niveau de l'espèce",
               "Identification au niveau du genre",
               "Identification au niveau de la famille",
-              "Identification au niveau du taxon",
+              "Identification au niveau du taxon (ex. poissons, crevettes, calmars, poulpes…)",
               "Nom vernaculaire malagasy des spécimens"
             ]
           },
@@ -640,17 +670,18 @@ const SURVEY = {
           "Moyen d'embarcation",
           "Type d'embarcation",
           "Nombre de pirogues",
+          "Longueur de la pirogue",
           "Nombre de pêcheurs à bord",
           "Engin de pêche utilisé",
           "Nombre d'engins de pêche utilisés",
           "Maillage de l'engin",
           "Poids total (kg)",
           "Poids par groupe de taxon (ex. poissons, crevettes, calmars, poulpes…) (kg)",
-          "Nombre de spécimens par groupe de taxon",
+          "Nombre d'individus",
           "Identification au niveau de l'espèce",
           "Identification au niveau du genre",
           "Identification au niveau de la famille",
-          "Identification au niveau du taxon",
+          "Identification au niveau du taxon (ex. poissons, crevettes, calmars, poulpes…)",
           "Nom vernaculaire malagasy des spécimens",
           "Longueur totale du spécimen",
           "Longueur à la fourche du spécimen",
@@ -668,20 +699,20 @@ const SURVEY = {
         ]
       },
       {
-        "id": "q022",
-        "n": 22,
+        "id": "q023",
+        "n": 23,
         "label": "Si autre, précisez",
         "type": "text",
         "required": true,
         "section": "E",
         "showIf": {
-          "q": "q021",
+          "q": "q022",
           "eq": "Autre"
         }
       },
       {
-        "id": "q023",
-        "n": 23,
+        "id": "q024",
+        "n": 24,
         "label": "À partir de ces variables, quels sont les indicateurs calculés ?",
         "type": "checkbox",
         "required": true,
@@ -699,9 +730,9 @@ const SURVEY = {
         ]
       },
       {
-        "id": "q024",
-        "n": 24,
-        "label": "Comment les données sont-elles enregistrées sur le terrain ?",
+        "id": "q025",
+        "n": 25,
+        "label": "Comment les données sont-elles enregistrées sur le terrain pour le suivi de cette ressource ?",
         "type": "checkbox",
         "required": true,
         "section": "E",
@@ -715,8 +746,8 @@ const SURVEY = {
         "other": true
       },
       {
-        "id": "q025",
-        "n": 25,
+        "id": "q026",
+        "n": 26,
         "label": "Quel est le nombre de villages suivis pour cette ressource ?",
         "type": "number",
         "required": true,
@@ -724,9 +755,9 @@ const SURVEY = {
         "min": 0
       },
       {
-        "id": "q026",
-        "n": 26,
-        "label": "À quelle fréquence les données sont-elles collectées ?",
+        "id": "q027",
+        "n": 27,
+        "label": "À quelle fréquence les données sont-elles collectées pour cette ressource ?",
         "type": "radio",
         "required": true,
         "section": "E",
@@ -740,17 +771,19 @@ const SURVEY = {
         ]
       },
       {
-        "id": "q027",
-        "n": 27,
-        "label": "Quels sont les matériels utilisés pour le suivi ?",
+        "id": "q028",
+        "n": 28,
+        "label": "Quels sont les matériels utilisés pour le suivi de cette ressource ?",
         "type": "checkbox",
         "required": true,
         "section": "E",
         "options": [
           "Balance",
-          "Ichtyomètre",
+          "Ichtyomètre / mètre",
           "Appareil photo",
           "GPS",
+          "Pied à coulisse",
+          "Plaque",
           "Autre"
         ],
         "other": true
@@ -764,16 +797,16 @@ const SURVEY = {
       "G"
     ],
     "showIf": {
-      "q": "q015",
+      "q": "q016",
       "ne": "Avant 2020"
     },
     "title": "Mise en œuvre du suivi — logistique et collecteurs",
     "short": "Logistique et collecteurs",
     "questions": [
       {
-        "id": "q028",
-        "n": 28,
-        "label": "Quels sont les moyens de déplacement nécessaires pour couvrir l'ensemble des villages suivis ?",
+        "id": "q029",
+        "n": 29,
+        "label": "Quels sont les moyens de déplacement nécessaires pour couvrir l'ensemble des villages suivis pour cette ressource ?",
         "type": "checkbox",
         "required": true,
         "section": "G",
@@ -783,13 +816,14 @@ const SURVEY = {
           "Moto",
           "Taxi-brousse",
           "4×4",
-          "Vedette"
+          "Vedette",
+          "Teftef"
         ]
       },
       {
-        "id": "q029",
-        "n": 29,
-        "label": "Qui est en charge de la collecte des données sur le terrain ?",
+        "id": "q030",
+        "n": 30,
+        "label": "Qui est en charge de la collecte des données sur le terrain pour le suivi de cette ressource ?",
         "type": "checkbox",
         "required": true,
         "section": "G",
@@ -802,8 +836,8 @@ const SURVEY = {
         ]
       },
       {
-        "id": "q030",
-        "n": 30,
+        "id": "q031",
+        "n": 31,
         "label": "Combien de collecteurs au total pour le suivi de cette ressource ?",
         "type": "number",
         "required": true,
@@ -811,21 +845,9 @@ const SURVEY = {
         "min": 0
       },
       {
-        "id": "q031",
-        "n": 31,
-        "label": "Les collecteurs de données ont-ils bénéficié d'une formation à la collecte de données ?",
-        "type": "radio",
-        "required": true,
-        "section": "G",
-        "options": [
-          "Oui",
-          "Non"
-        ]
-      },
-      {
         "id": "q032",
         "n": 32,
-        "label": "Les collecteurs de données sont-ils rémunérés ?",
+        "label": "Les collecteurs de données de cette ressource ont-ils bénéficié d'une formation à la collecte de données ?",
         "type": "radio",
         "required": true,
         "section": "G",
@@ -837,12 +859,24 @@ const SURVEY = {
       {
         "id": "q033",
         "n": 33,
-        "label": "Si oui, donnez une fourchette de salaire",
+        "label": "Les collecteurs de données de cette ressource sont-ils rémunérés ?",
+        "type": "radio",
+        "required": true,
+        "section": "G",
+        "options": [
+          "Oui",
+          "Non"
+        ]
+      },
+      {
+        "id": "q034",
+        "n": 34,
+        "label": "Si oui, donnez une fourchette de salaire mensuel",
         "type": "radio",
         "required": true,
         "section": "G",
         "showIf": {
-          "q": "q032",
+          "q": "q033",
           "eq": "Oui"
         },
         "options": [
@@ -861,16 +895,16 @@ const SURVEY = {
       "G"
     ],
     "showIf": {
-      "q": "q015",
+      "q": "q016",
       "ne": "Avant 2020"
     },
     "title": "Mise en œuvre du suivi — coûts et partenaires",
     "short": "Coûts et partenaires",
     "questions": [
       {
-        "id": "q034",
-        "n": 34,
-        "label": "Quel type de compensation ou d'incitation reçoivent les pêcheurs / acheteurs participant au suivi ?",
+        "id": "q035",
+        "n": 35,
+        "label": "Quel type de compensation ou d'incitation reçoivent les pêcheurs / acheteurs participant au suivi de cette ressource ?",
         "type": "checkbox",
         "required": true,
         "section": "G",
@@ -883,23 +917,28 @@ const SURVEY = {
         "other": true
       },
       {
-        "id": "q035",
-        "n": 35,
+        "id": "q036",
+        "n": 36,
         "label": "Si financière, combien reçoivent-ils par pêcheur / acheteur ?",
         "type": "number",
         "required": true,
         "section": "G",
         "min": 0,
-        "unit": "MGA",
+        "units": [
+          "MGA / jour",
+          "MGA / semaine",
+          "MGA / mois"
+        ],
+        "help": "Indiquez le montant et précisez s'il est reçu par jour, par semaine ou par mois.",
         "showIf": {
-          "q": "q034",
+          "q": "q035",
           "eq": "Financière"
         }
       },
       {
-        "id": "q036",
-        "n": 36,
-        "label": "À combien estimez-vous le coût de mise en œuvre (mensuel ou total) de ce suivi ?",
+        "id": "q037",
+        "n": 37,
+        "label": "À combien estimez-vous le coût de mise en œuvre (mensuel ou total) du suivi de cette ressource ?",
         "type": "radio",
         "required": true,
         "section": "G",
@@ -912,9 +951,9 @@ const SURVEY = {
         ]
       },
       {
-        "id": "q037",
-        "n": 37,
-        "label": "Y a-t-il des partenaires ou bailleurs qui contribuent au financement de ce suivi ?",
+        "id": "q038",
+        "n": 38,
+        "label": "Y a-t-il des partenaires ou bailleurs qui contribuent au financement du suivi de cette ressource ?",
         "type": "radio",
         "required": true,
         "section": "G",
@@ -924,20 +963,20 @@ const SURVEY = {
         ]
       },
       {
-        "id": "q038",
-        "n": 38,
+        "id": "q039",
+        "n": 39,
         "label": "Si oui, lesquels ?",
         "type": "text",
         "required": true,
         "section": "G",
         "showIf": {
-          "q": "q037",
+          "q": "q038",
           "eq": "Oui"
         }
       },
       {
-        "id": "q039",
-        "n": 39,
+        "id": "q040",
+        "n": 40,
         "label": "Cette méthode / ce protocole de suivi est-il utilisé par d'autres partenaires ?",
         "type": "radio",
         "required": true,
@@ -948,16 +987,17 @@ const SURVEY = {
         ]
       },
       {
-        "id": "q040",
-        "n": 40,
+        "id": "q041",
+        "n": 41,
         "label": "Si oui, lesquels ?",
         "type": "text",
         "required": true,
         "section": "G",
         "showIf": {
-          "q": "q039",
+          "q": "q040",
           "eq": "Oui"
-        }
+        },
+        "help": "Veuillez les énumérer."
       }
     ]
   },
@@ -978,12 +1018,36 @@ const SURVEY = {
         }
       ]
     },
-    "title": "Contraintes de mise en œuvre",
-    "short": "Contraintes",
+    "title": "Autres sites et contraintes de mise en œuvre",
+    "short": "Autres sites et contraintes",
     "questions": [
       {
-        "id": "q041",
-        "n": 41,
+        "id": "q042",
+        "n": 42,
+        "label": "Le(s) protocole(s) décrit(s) est-il (sont-ils) appliqué(s) dans d'autres sites d'intervention de votre organisation ?",
+        "type": "radio",
+        "required": false,
+        "options": [
+          "Oui",
+          "Non",
+          "Non applicable"
+        ]
+      },
+      {
+        "id": "q043",
+        "n": 43,
+        "label": "Si oui, veuillez lister les autres sites d'intervention de votre organisation qui utilisent ce même protocole",
+        "type": "textarea",
+        "required": false,
+        "showIf": {
+          "q": "q042",
+          "eq": "Oui"
+        },
+        "help": "Séparez les noms par une virgule (ex. nom de l'AMP, du LMMA, de la baie, du paysage…)."
+      },
+      {
+        "id": "q044",
+        "n": 44,
         "label": "Quelles sont les principales contraintes rencontrées lors de la mise en œuvre du / des suivis décrits ?",
         "type": "checkbox",
         "required": true,
@@ -1000,13 +1064,13 @@ const SURVEY = {
         ]
       },
       {
-        "id": "q042",
-        "n": 42,
+        "id": "q045",
+        "n": 45,
         "label": "Si autre, précisez",
         "type": "text",
         "required": true,
         "showIf": {
-          "q": "q041",
+          "q": "q044",
           "eq": "Autre"
         }
       }
@@ -1033,8 +1097,8 @@ const SURVEY = {
     "short": "Gestion des données",
     "questions": [
       {
-        "id": "q043",
-        "n": 43,
+        "id": "q046",
+        "n": 46,
         "label": "Où les données sont-elles stockées après la collecte ?",
         "type": "checkbox",
         "required": true,
@@ -1051,8 +1115,8 @@ const SURVEY = {
         "other": true
       },
       {
-        "id": "q044",
-        "n": 44,
+        "id": "q047",
+        "n": 47,
         "label": "Les données sont-elles partagées avec d’autres institutions / partenaires ?",
         "type": "radio",
         "required": true,
@@ -1063,13 +1127,13 @@ const SURVEY = {
         ]
       },
       {
-        "id": "q045",
-        "n": 45,
+        "id": "q048",
+        "n": 48,
         "label": "Si oui, avec lesquels ?",
         "type": "textarea",
         "required": true,
         "showIf": {
-          "q": "q044",
+          "q": "q047",
           "in": [
             "Oui",
             "Partiellement"
@@ -1084,8 +1148,8 @@ const SURVEY = {
     "short": "Harmonisation",
     "questions": [
       {
-        "id": "q046",
-        "n": 46,
+        "id": "q049",
+        "n": 49,
         "label": "Selon vous, est-il nécessaire d'harmoniser les protocoles de suivi des pêcheries à l'échelle nationale ?",
         "type": "radio",
         "required": true,
@@ -1095,15 +1159,15 @@ const SURVEY = {
         ]
       },
       {
-        "id": "q047",
-        "n": 47,
+        "id": "q050",
+        "n": 50,
         "label": "Justifiez votre réponse",
         "type": "textarea",
         "required": true
       },
       {
-        "id": "q048",
-        "n": 48,
+        "id": "q051",
+        "n": 51,
         "label": "Selon vous, quels critères sont importants pour un protocole national ?",
         "type": "checkbox",
         "required": true,
@@ -1118,8 +1182,8 @@ const SURVEY = {
         "other": true
       },
       {
-        "id": "q049",
-        "n": 49,
+        "id": "q052",
+        "n": 52,
         "label": "Selon vous, quelles sont les étapes à entreprendre pour arriver à une harmonisation des protocoles de suivi des pêcheries à l'échelle nationale ?",
         "type": "checkbox",
         "required": true,
@@ -1134,19 +1198,19 @@ const SURVEY = {
         ]
       },
       {
-        "id": "q050",
-        "n": 50,
+        "id": "q053",
+        "n": 53,
         "label": "Si autre, précisez",
         "type": "text",
         "required": true,
         "showIf": {
-          "q": "q049",
+          "q": "q052",
           "eq": "Autre"
         }
       },
       {
-        "id": "q051",
-        "n": 51,
+        "id": "q054",
+        "n": 54,
         "label": "Parmi les variables que vous collectez, lesquelles suggérez-vous de garder pour une harmonisation ?",
         "type": "checkbox",
         "required": true,
@@ -1156,6 +1220,8 @@ const SURVEY = {
             "options": [
               "Date",
               "Marée",
+              "Identifiant du pêcheur",
+              "Genre du pêcheur",
               "Heure de départ",
               "Heure d'arrivée",
               "Nombre d'heures par sortie",
@@ -1187,7 +1253,7 @@ const SURVEY = {
             "options": [
               "Poids total (kg)",
               "Poids par groupe de taxon (ex. poissons, crevettes, calmars, poulpes…) (kg)",
-              "Nombre de spécimens par groupe de taxon"
+              "Nombre d'individus"
             ]
           },
           {
@@ -1196,7 +1262,7 @@ const SURVEY = {
               "Identification au niveau de l'espèce",
               "Identification au niveau du genre",
               "Identification au niveau de la famille",
-              "Identification au niveau du taxon",
+              "Identification au niveau du taxon (ex. poissons, crevettes, calmars, poulpes…)",
               "Nom vernaculaire malagasy des spécimens"
             ]
           },
@@ -1248,6 +1314,8 @@ const SURVEY = {
         "options": [
           "Date",
           "Marée",
+          "Identifiant du pêcheur",
+          "Genre du pêcheur",
           "Heure de départ",
           "Heure d'arrivée",
           "Nombre d'heures par sortie",
@@ -1264,11 +1332,11 @@ const SURVEY = {
           "Maillage de l'engin",
           "Poids total (kg)",
           "Poids par groupe de taxon (ex. poissons, crevettes, calmars, poulpes…) (kg)",
-          "Nombre de spécimens par groupe de taxon",
+          "Nombre d'individus",
           "Identification au niveau de l'espèce",
           "Identification au niveau du genre",
           "Identification au niveau de la famille",
-          "Identification au niveau du taxon",
+          "Identification au niveau du taxon (ex. poissons, crevettes, calmars, poulpes…)",
           "Nom vernaculaire malagasy des spécimens",
           "Longueur totale du spécimen",
           "Longueur à la fourche du spécimen",
@@ -1286,15 +1354,15 @@ const SURVEY = {
         ]
       },
       {
-        "id": "q052",
-        "n": 52,
+        "id": "q055",
+        "n": 55,
         "label": "Quelles sont vos attentes vis-à-vis d'une éventuelle harmonisation du suivi des pêcheries ?",
         "type": "textarea",
         "required": true
       },
       {
-        "id": "q053",
-        "n": 53,
+        "id": "q056",
+        "n": 56,
         "label": "Souhaitez-vous participer à l'élaboration du protocole national ?",
         "type": "radio",
         "required": true,
@@ -1305,8 +1373,8 @@ const SURVEY = {
         ]
       },
       {
-        "id": "q054",
-        "n": 54,
+        "id": "q057",
+        "n": 57,
         "label": "Avez-vous d’autres recommandations concernant la mise en place d’un système national harmonisé de suivi des pêcheries ?",
         "type": "textarea",
         "required": true
@@ -1319,8 +1387,8 @@ const SURVEY = {
     "short": "Pièces jointes",
     "questions": [
       {
-        "id": "q055",
-        "n": 55,
+        "id": "q058",
+        "n": 58,
         "label": "Si disponible, veuillez joindre un document de projet (protocole, rapport, fiche de suivi, autre document) se rapportant aux suivis mentionnés.",
         "type": "file",
         "required": false,

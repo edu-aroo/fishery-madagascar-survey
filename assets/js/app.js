@@ -8,7 +8,7 @@
   const META = SURVEY.META;
   const MAX_METHODS = SURVEY.MAX_METHODS || 3;
   const STORE_KEY = "peche-enquete-draft-v" + META.version;
-  const LOOP = SURVEY.LOOP || null;                           // blocs répétés par ressource (Q14–Q40)
+  const LOOP = SURVEY.LOOP || null;                           // blocs répétés par ressource (Q15–Q41)
   const HAS_METHODS = !!LOOP;
   const QDEF = {};
   SURVEY.STEPS.forEach(s => s.questions.forEach(q => { QDEF[q.id] = q; }));
@@ -65,10 +65,26 @@
       ? (state.general[src + "_autre"] ? "Autre : " + state.general[src + "_autre"].trim() : "Autre ressource")
       : v);
   }
+  // Même protocole pour toutes les ressources (Q14 = « Oui ») : un seul passage dans la boucle
+  function isCommon() {
+    if (!HAS_METHODS || !LOOP.common || !condDeep(LOOP.active, state.general)) return false;
+    const q = QDEF[LOOP.common.q];
+    return !!q && questionVisible(q, state.general) && cond(LOOP.common, state.general);
+  }
   function methodNames() {
     if (!HAS_METHODS) return [];
     if (!condDeep(LOOP.active, state.general)) return [];
-    return selectedMethodNames();
+    const names = selectedMethodNames();
+    return isCommon() ? [names.join(SEP)] : names;
+  }
+  function groupLabel(name, i) {
+    return isCommon() ? (LOOP.commonLabel || "Protocole commun") + " · " + name.split(SEP).join(", ")
+      : LOOP.label + " " + (i + 1) + " · " + name;
+  }
+  // Libellé adapté au protocole commun (« cette ressource » → « ces ressources »)
+  function qLabel(step, q) {
+    if (!step || !step.scope || !isCommon()) return q.label;
+    return q.label.replace(/cette ressource/g, "ces ressources");
   }
   function methodAnswers(name) {
     if (!state.methods[name]) state.methods[name] = {};
@@ -87,6 +103,7 @@
     if ("starts" in c) return arr.some(x => String(x).startsWith(c.starts));
     if ("any" in c) return arr.some(x => c.any.includes(x));
     if ("notOnly" in c) return !(arr.length === 1 && arr[0] === c.notOnly);
+    if ("minCount" in c) return arr.length >= c.minCount;
     if (c.filled) return (QDEF[c.q] && QDEF[c.q].type === "file") ? photos.length > 0 : !isEmpty(v);
     return true;
   }
@@ -118,7 +135,7 @@
           active.forEach((pm, j) => {
             out.push({
               id: "m" + i + "-" + pm.key, kind: "questions", def: pm, title: pm.title, short: pm.short,
-              scope: { method: name, index: i }, group: LOOP.label + " " + (i + 1) + " · " + name,
+              scope: { method: name, index: i }, group: groupLabel(name, i),
               sub: (j + 1) + "/" + active.length
             });
           });
@@ -300,7 +317,7 @@
     }
     const sigAttr = q.type === "methodpick" ? ` data-sig="${esc(selectedMethodNames().join("\u0001"))}"` : "";
     return `<div class="q" data-qid="${q.id}" data-type="${q.type}"${sigAttr} ${questionVisible(q, condAnswers(step)) ? "" : "hidden"}>
-      <div class="q-head">${num}<label class="q-label" ${["radio", "checkbox", "scale", "rank", "methodpick", "file", "grid"].includes(q.type) ? "" : `for="${uid}"`}>${esc(q.label)}${req}</label></div>
+      <div class="q-head">${num}<label class="q-label" ${["radio", "checkbox", "scale", "rank", "methodpick", "file", "grid"].includes(q.type) ? "" : `for="${uid}"`}>${esc(qLabel(step, q))}${req}</label></div>
       ${q.help ? `<p class="q-help">${esc(q.help)}</p>` : ""}
       <div class="q-field">${field}</div>
       <p class="q-error" role="alert"></p>
@@ -361,9 +378,13 @@
       const others = PHOTOS.filter(p => p.key !== META.heroPhoto);
       const banner = others.length ? others[qSteps.indexOf(step) % others.length] : null;
       html = (banner ? photoFigure(banner, "photo-banner") : "") + `<div class="step-head">
-          ${step.scope ? `<div class="method-banner"><span class="method-tag">${esc(LOOP.label)} ${step.scope.index + 1} / ${methodNames().length}</span><strong>${esc(step.scope.method)}</strong><span class="muted small">Partie ${step.sub}</span></div>` : ""}
+          ${step.scope ? (isCommon()
+            ? `<div class="method-banner"><span class="method-tag">${esc(LOOP.commonLabel || "Protocole commun")}</span><strong>${esc(step.scope.method.split(SEP).join(", "))}</strong><span class="muted small">Partie ${step.sub}</span></div>`
+            : `<div class="method-banner"><span class="method-tag">${esc(LOOP.label)} ${step.scope.index + 1} / ${methodNames().length}</span><strong>${esc(step.scope.method)}</strong><span class="muted small">Partie ${step.sub}</span></div>`) : ""}
           <p class="eyebrow">Section ${esc(secLetters)}</p><h2>${esc(def.title)}</h2>
-          ${step.scope ? `<p class="muted">Les questions de cette partie portent uniquement sur la ressource <strong>${esc(step.scope.method)}</strong>.</p>` : ""}
+          ${step.scope ? (isCommon()
+            ? `<p class="muted">Les questions de cette partie portent sur le protocole commun utilisé pour l'ensemble des ressources suivantes : <strong>${esc(step.scope.method.split(SEP).join(", "))}</strong>.</p>`
+            : `<p class="muted">Les questions de cette partie portent uniquement sur la ressource <strong>${esc(step.scope.method)}</strong>.</p>`) : ""}
         </div>`;
       let lastSec = null;
       def.questions.forEach(q => {
@@ -468,7 +489,7 @@
     clearError(qEl);
     updateVisibility(step);
 
-    // Certaines réponses (Q11–Q13, Q15…) modifient la liste des étapes
+    // Certaines réponses (Q11–Q14, Q16…) modifient la liste des étapes
     const sigOf = list => list.map(s => s.id + ":" + s.group).join("|");
     const fresh = buildSteps();
     if (sigOf(fresh) !== sigOf(steps)) {
@@ -584,7 +605,7 @@
       if (!ok) incomplete.push(i);
       const rows = s.def.questions.filter(q => questionVisible(q, cAns)).map(q => {
         const f = fmt(q, ans);
-        return `<div class="recap-row"><dt><span class="q-num">Q${esc(q.n)}</span> ${esc(q.label)}</dt><dd>${f ? esc(f) : '<span class="muted">—</span>'}</dd></div>`;
+        return `<div class="recap-row"><dt><span class="q-num">Q${esc(q.n)}</span> ${esc(qLabel(s, q))}</dt><dd>${f ? esc(f) : '<span class="muted">—</span>'}</dd></div>`;
       }).join("");
       html += `<section class="recap-block ${ok ? "" : "is-incomplete"}">
         <header><div><span class="muted small">${esc(s.group || "Section " + s.def.key)}</span><h3>${esc(s.title)}</h3></div>
@@ -710,8 +731,10 @@
       const active = cond(s.showIf, state.general);
       Object.assign(general, flatten(s.questions, state.general, state.general, active));
     });
+    const common = isCommon();
     if (HAS_METHODS) {
-      general.n_ressources_decrites = names.length;
+      general.n_ressources_suivies = names.length ? selectedMethodNames().length : 0;
+      general.n_ressources_decrites = names.length;          // nombre de blocs décrits (1 si protocole commun)
       general.ressources_decrites = names.join(SEP);
     }
     general.consentement = state.consent ? "Oui" : "Non";
@@ -720,7 +743,7 @@
     const methods = names.map((name, i) => {
       const ans = methodAnswers(name);
       const cAns = Object.assign({}, state.general, ans);
-      const row = { ressource_index: i + 1, ressource_nom: name };
+      const row = { ressource_index: i + 1, ressource_nom: name, protocole_commun: common ? "Oui" : "Non" };
       perMethod.forEach(s => Object.assign(row, flatten(s.questions, ans, cAns, condDeep(s.showIf, cAns))));
       return row;
     });
