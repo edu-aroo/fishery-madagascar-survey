@@ -22,11 +22,17 @@
                      { q:'q013', minCount:2 } | { all:[cond1, cond2] }
    Version 2.0 (02/11/2026) : questionnaire du 23/10/2026 — identifiants
    renumérotés (id = numéro affiché) ; la feuille Google doit être vidée.
+   Version 2.1 (10/11/2026) : Q30 — « Associations » remplacé par « Membres
+   d'association communautaire » et « Membres de LMMA » ; nouvelle question
+   Q30b (q030b, noms des associations / LMMA) ; libellé de Q31 précisé.
+   Identifiants existants inchangés : la feuille Google n'a PAS à être vidée
+   (la colonne q030b est ajoutée automatiquement par Apps Script).
    ===================================================================== */
 
 const SURVEY = {
   META: {
-  "version": "2.0",
+  "version": "2.1",
+  "draftVersion": "2.0",
   "title": "Enquête nationale sur le suivi des pêcheries à Madagascar",
   "subtitle": "Inventaire des dispositifs de suivi des pêcheries, de leurs moyens et de leurs contraintes, en vue d'un protocole national harmonisé",
   "organizer": "Fondation pour les Aires Protégées et la Biodiversité de Madagascar (FAPBM), en collaboration avec l’Institut Halieutique et des Sciences Marines (IH.SM) – Université de Toliara",
@@ -832,13 +838,30 @@ const SURVEY = {
           "Techniciens",
           "Chercheurs",
           "Socio-organisateurs",
-          "Associations"
+          "Membres d'association communautaire",
+          "Membres de LMMA"
         ]
+      },
+      {
+        "id": "q030b",
+        "n": "30b",
+        "label": "Veuillez préciser le(s) nom(s) de l'association et/ou du LMMA qui collabore(nt) à la collecte de données",
+        "type": "text",
+        "required": false,
+        "section": "G",
+        "showIf": {
+          "q": "q030",
+          "any": [
+            "Membres d'association communautaire",
+            "Membres de LMMA"
+          ]
+        },
+        "help": "Séparez les noms par une virgule s'il y en a plusieurs."
       },
       {
         "id": "q031",
         "n": 31,
-        "label": "Combien de collecteurs au total pour le suivi de cette ressource ?",
+        "label": "Combien de collecteurs de données au total pour le suivi de cette ressource ?",
         "type": "number",
         "required": true,
         "section": "G",

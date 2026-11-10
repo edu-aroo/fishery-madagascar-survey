@@ -7,7 +7,8 @@
 
   const META = SURVEY.META;
   const MAX_METHODS = SURVEY.MAX_METHODS || 3;
-  const STORE_KEY = "peche-enquete-draft-v" + META.version;
+  // draftVersion : conserve les brouillons en cours lors d'une mise à jour mineure du questionnaire
+  const STORE_KEY = "peche-enquete-draft-v" + (META.draftVersion || META.version);
   const LOOP = SURVEY.LOOP || null;                           // blocs répétés par ressource (Q15–Q41)
   const HAS_METHODS = !!LOOP;
   const QDEF = {};
